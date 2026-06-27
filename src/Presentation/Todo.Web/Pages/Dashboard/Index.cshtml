@@ -1,0 +1,162 @@
+@page
+@model Todo.Web.Pages.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var username = User.Identity?.Name ?? "User";
+}
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h2>
+        <p class="text-muted mb-0">Welcome back, <strong>@username</strong>!</p>
+    </div>
+    <a asp-page="/Tasks/Index" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Add Task
+    </a>
+</div>
+
+<!-- Primary stat cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #003087 0%, #0051c3 100%);">
+            <div class="card-body text-white d-flex align-items-center gap-3">
+                <div class="stat-icon opacity-75"><i class="bi bi-list-task"></i></div>
+                <div>
+                    <div class="fs-2 fw-bold lh-1">@Model.Dashboard.TotalTasks</div>
+                    <div class="small opacity-75 mt-1">Total Tasks</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
+            <div class="card-body text-white d-flex align-items-center gap-3">
+                <div class="stat-icon opacity-75"><i class="bi bi-check2-circle"></i></div>
+                <div>
+                    <div class="fs-2 fw-bold lh-1">@Model.Dashboard.CompletedTasks</div>
+                    <div class="small opacity-75 mt-1">Completed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);">
+            <div class="card-body text-white d-flex align-items-center gap-3">
+                <div class="stat-icon opacity-75"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                    <div class="fs-2 fw-bold lh-1">@Model.Dashboard.RemainingTasks</div>
+                    <div class="small opacity-75 mt-1">Remaining</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #dc3545 0%, #e91e63 100%);">
+            <div class="card-body text-white d-flex align-items-center gap-3">
+                <div class="stat-icon opacity-75"><i class="bi bi-exclamation-circle"></i></div>
+                <div>
+                    <div class="fs-2 fw-bold lh-1">@Model.Dashboard.OverdueTasks</div>
+                    <div class="small opacity-75 mt-1">Overdue</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success"
+                         style="width:36px;height:36px;">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <h6 class="mb-0 fw-semibold">Completed Today</h6>
+                </div>
+                <div class="fs-3 fw-bold text-success mb-2">@Model.Dashboard.CompletedToday</div>
+                <div class="progress mb-1" style="height: 6px; border-radius:3px;">
+                    <div class="progress-bar bg-success"
+                         style="width: @(Math.Min(Model.Dashboard.CompletedTodayPercentage, 100).ToString("0"))%; border-radius:3px;"></div>
+                </div>
+                <small class="text-muted">@Model.Dashboard.CompletedTodayPercentage.ToString("0.0")% of all tasks</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger"
+                         style="width:36px;height:36px;">
+                        <i class="bi bi-flag-fill"></i>
+                    </div>
+                    <h6 class="mb-0 fw-semibold">High Priority</h6>
+                </div>
+                <div class="fs-3 fw-bold text-danger mb-1">@Model.Dashboard.HighPriorityTasks</div>
+                <small class="text-muted">tasks need urgent attention</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary"
+                         style="width:36px;height:36px;">
+                        <i class="bi bi-folder2"></i>
+                    </div>
+                    <h6 class="mb-0 fw-semibold">Projects</h6>
+                </div>
+                <div class="fs-3 fw-bold text-primary mb-1">@Model.Dashboard.TotalProjects</div>
+                <small><a asp-page="/Projects/Index" class="text-decoration-none">View all projects →</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project progress -->
+@if (Model.Dashboard.ProjectSummaries.Any())
+{
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-transparent border-bottom py-3">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-folder2-open me-2 text-primary"></i>Project Progress</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                @foreach (var project in Model.Dashboard.ProjectSummaries)
+                {
+                    var pct = (int)Math.Min(project.CompletionPercentage, 100);
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card border bg-body-secondary h-100">
+                            <div class="card-body py-3">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="rounded-circle flex-shrink-0" style="width:10px;height:10px;background:@project.Color;display:inline-block;"></span>
+                                    <span class="fw-medium text-truncate">@project.Name</span>
+                                    <span class="ms-auto badge bg-body-tertiary text-body-secondary small">@pct%</span>
+                                </div>
+                                <div class="progress mb-1" style="height:5px;border-radius:3px;">
+                                    <div class="progress-bar" style="width:@pct%;background-color:@project.Color;border-radius:3px;"></div>
+                                </div>
+                                <small class="text-muted">@project.CompletedCount / @project.TaskCount tasks</small>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm border-0">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-folder-plus text-muted" style="font-size:3rem;"></i>
+            <p class="text-muted mt-3 mb-2">No projects yet.</p>
+            <a asp-page="/Projects/Index" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Create your first project
+            </a>
+        </div>
+    </div>
+}

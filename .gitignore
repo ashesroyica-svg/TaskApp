@@ -26,6 +26,9 @@ appsettings.json
 appsettings.Development.json
 appsettings.Production.json
 
+# Logs
+*.log
+
 # OS
 Thumbs.db
 .DS_Store

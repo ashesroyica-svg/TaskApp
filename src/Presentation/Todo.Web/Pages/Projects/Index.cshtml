@@ -1,0 +1,231 @@
+@page
+@model Todo.Web.Pages.Projects.IndexModel
+@{
+    ViewData["Title"] = "Projects";
+}
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-folder2-open me-2 text-primary"></i>Projects</h2>
+        <p class="text-muted mb-0">Organize your tasks with projects</p>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProjectModal">
+        <i class="bi bi-plus-lg me-2"></i>New Project
+    </button>
+</div>
+
+@if (Model.SuccessMessage != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (Model.ErrorMessage != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!Model.Projects.Any())
+{
+    <div class="card shadow-sm border-0">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-folder-plus text-muted" style="font-size:3.5rem;"></i>
+            <p class="text-muted mt-3 mb-2 fs-5">No projects yet.</p>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createProjectModal">
+                <i class="bi bi-plus-lg me-1"></i>Create your first project
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var project in Model.Projects)
+        {
+            var completionPct = project.TaskCount > 0
+                ? (int)Math.Round((double)project.CompletedTaskCount / project.TaskCount * 100)
+                : 0;
+
+            <div class="col-md-6 col-xl-4">
+                <div class="card shadow-sm border-0 h-100 project-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="project-dot flex-shrink-0"
+                                      style="width:14px;height:14px;border-radius:50%;background:@project.Color;display:inline-block;"></span>
+                                <h6 class="mb-0 fw-semibold">@project.Name</h6>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown" aria-label="Project options">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button class="dropdown-item"
+                                                onclick="openEditModal(@project.Id, '@System.Web.HttpUtility.JavaScriptStringEncode(project.Name)', '@System.Web.HttpUtility.JavaScriptStringEncode(project.Description ?? "")', '@project.Color')">
+                                            <i class="bi bi-pencil me-2"></i>Edit
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <a asp-page="/Tasks/Index" asp-route-projectFilter="@project.Id" class="dropdown-item">
+                                            <i class="bi bi-list-check me-2"></i>View Tasks
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form method="post" asp-page-handler="Delete"
+                                              onsubmit="return confirm('Delete project &quot;@project.Name&quot;? Tasks will not be deleted.')">
+                                            <input type="hidden" name="id" value="@project.Id" />
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="bi bi-trash3 me-2"></i>Delete
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(project.Description))
+                        {
+                            <p class="text-muted small mb-3">@project.Description</p>
+                        }
+
+                        <div class="d-flex justify-content-between align-items-center small text-muted mb-2">
+                            <span><i class="bi bi-list-check me-1"></i>@project.CompletedTaskCount / @project.TaskCount tasks</span>
+                            <span class="fw-medium">@completionPct%</span>
+                        </div>
+                        <div class="progress mb-1" style="height:5px;border-radius:3px;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width:@completionPct%;background-color:@project.Color;border-radius:3px;"
+                                 aria-valuenow="@completionPct" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pt-0 pb-3 px-3">
+                        <small class="text-muted">
+                            <i class="bi bi-calendar3 me-1"></i>Created @project.CreatedDate.ToString("MMM d, yyyy")
+                        </small>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Create Project Modal -->
+<div class="modal fade" id="createProjectModal" tabindex="-1" aria-labelledby="createProjectLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Create">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="createProjectLabel">
+                        <i class="bi bi-folder-plus me-2 text-primary"></i>New Project
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <div class="mb-3">
+                        <label asp-for="NewProject.Name" class="form-label fw-medium">Project Name <span class="text-danger">*</span></label>
+                        <input asp-for="NewProject.Name" class="form-control" placeholder="e.g. Website Redesign" />
+                        <span asp-validation-for="NewProject.Name" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="NewProject.Description" class="form-label fw-medium">Description</label>
+                        <textarea asp-for="NewProject.Description" class="form-control" rows="2"
+                                  placeholder="Optional description..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="NewProject.Color" class="form-label fw-medium">Color</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <input asp-for="NewProject.Color" type="color" class="form-control form-control-color"
+                                   value="#003087" style="width:50px;height:38px;" />
+                            <div class="d-flex gap-2 flex-wrap">
+                                @foreach (var c in new[] { "#003087","#0d6efd","#198754","#dc3545","#fd7e14","#6f42c1","#0dcaf0","#212529" })
+                                {
+                                    <button type="button" class="color-swatch"
+                                            style="width:24px;height:24px;border-radius:50%;background:@c;border:2px solid transparent;cursor:pointer;"
+                                            onclick="setProjectColor('@c', 'NewProject_Color')"></button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>Create Project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div class="modal fade" id="editProjectModal" tabindex="-1" aria-labelledby="editProjectLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Edit" id="editProjectForm">
+                <input type="hidden" name="id" id="editProjectId" />
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="editProjectLabel">
+                        <i class="bi bi-pencil-square me-2 text-primary"></i>Edit Project
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <div class="mb-3">
+                        <label for="editName" class="form-label fw-medium">Project Name <span class="text-danger">*</span></label>
+                        <input type="text" name="EditProject.Name" id="editName" class="form-control"
+                               placeholder="Project name" required maxlength="100" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDesc" class="form-label fw-medium">Description</label>
+                        <textarea name="EditProject.Description" id="editDesc" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="EditProject_Color" class="form-label fw-medium">Color</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <input type="color" name="EditProject.Color" id="EditProject_Color"
+                                   class="form-control form-control-color" style="width:50px;height:38px;" />
+                            <div class="d-flex gap-2 flex-wrap">
+                                @foreach (var c in new[] { "#003087","#0d6efd","#198754","#dc3545","#fd7e14","#6f42c1","#0dcaf0","#212529" })
+                                {
+                                    <button type="button" class="color-swatch"
+                                            style="width:24px;height:24px;border-radius:50%;background:@c;border:2px solid transparent;cursor:pointer;"
+                                            onclick="setProjectColor('@c', 'EditProject_Color')"></button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditModal(id, name, description, color) {
+            document.getElementById('editProjectId').value = id;
+            document.getElementById('editName').value = name;
+            document.getElementById('editDesc').value = description;
+            document.getElementById('EditProject_Color').value = color;
+            new bootstrap.Modal(document.getElementById('editProjectModal')).show();
+        }
+
+        function setProjectColor(color, inputId) {
+            document.getElementById(inputId).value = color;
+        }
+    </script>
+}

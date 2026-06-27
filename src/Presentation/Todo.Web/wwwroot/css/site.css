@@ -1,0 +1,135 @@
+/* ── ICA Brand ───────────────────────────────────────────────────── */
+:root {
+    --ica-navy: #003087;
+    --ica-navy-light: #0051c3;
+    --transition-speed: 0.2s;
+}
+
+/* ── Auth pages ─────────────────────────────────────────────────── */
+.auth-bg {
+    background: linear-gradient(135deg, #e8f0fe 0%, #f0f4ff 50%, #e8eaf6 100%);
+}
+
+[data-bs-theme="dark"] .auth-bg {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2128 100%);
+}
+
+.auth-card {
+    border-radius: 1rem !important;
+    overflow: hidden;
+}
+
+/* ── Avatar ─────────────────────────────────────────────────────── */
+.avatar-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+/* ── Stat icon ──────────────────────────────────────────────────── */
+.stat-icon {
+    font-size: 2.25rem;
+    line-height: 1;
+}
+
+/* ── Task cards ─────────────────────────────────────────────────── */
+.task-card {
+    transition: box-shadow var(--transition-speed), transform var(--transition-speed);
+    border-radius: 0.75rem !important;
+}
+
+.task-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    transform: translateY(-1px);
+}
+
+.task-completed .card-body {
+    opacity: 0.6;
+}
+
+/* ── Project cards ───────────────────────────────────────────────── */
+.project-card {
+    border-radius: 0.75rem !important;
+    transition: box-shadow var(--transition-speed), transform var(--transition-speed);
+}
+
+.project-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    transform: translateY(-1px);
+}
+
+/* ── Color swatches ─────────────────────────────────────────────── */
+.color-swatch {
+    transition: transform 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+    outline: none;
+}
+
+.color-swatch:hover {
+    transform: scale(1.25);
+    border-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ── Navbar ─────────────────────────────────────────────────────── */
+.navbar-brand {
+    letter-spacing: -0.3px;
+}
+
+/* ── Utility ─────────────────────────────────────────────────────── */
+.min-width-0 {
+    min-width: 0;
+}
+
+/* ── Input group icon alignment ──────────────────────────────────── */
+.input-group-text {
+    border-right: none;
+}
+
+.form-control.border-start-0,
+.form-select.border-start-0 {
+    border-left: none;
+}
+
+.form-control.border-start-0:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+}
+
+/* ── Dark mode adjustments ───────────────────────────────────────── */
+[data-bs-theme="dark"] .card {
+    background-color: #1e2433;
+    border-color: rgba(255, 255, 255, 0.07);
+}
+
+[data-bs-theme="dark"] .task-card:hover,
+[data-bs-theme="dark"] .project-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-bs-theme="dark"] .bg-body-secondary {
+    background-color: #252d3d !important;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+}
