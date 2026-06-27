@@ -3,10 +3,11 @@
 ## Project Context
 
 This is a full-stack ICA Employee Todo Application built with:
-- **Backend:** ASP.NET Core 8 Web API (Clean Architecture)
-- **Frontend:** Angular 18 + Bootstrap 5.3
-- **Database:** MySQL 8+ via EF Core (Code-First)
-- **Auth:** JWT Bearer tokens
+- **Backend API:** ASP.NET Core 8 Web API (Clean Architecture) — `Todo.API`
+- **Web Frontend:** ASP.NET Core 8 Razor Pages — `Todo.Web`
+- **Database:** SQL Server via EF Core (Code-First, `Microsoft.EntityFrameworkCore.SqlServer`)
+- **Auth in Todo.Web:** Cookie authentication (`Microsoft.AspNetCore.Authentication.Cookies`)
+- **Auth in Todo.API:** JWT Bearer tokens
 
 Read `SPEC.md` and `project-spec.md` for full requirements before generating any code.
 
@@ -21,7 +22,6 @@ Read `SPEC.md` and `project-spec.md` for full requirements before generating any
 - Every file must compile/run without modification
 - Use **UTF-8 encoding** for all files
 - Add XML doc comments on all public C# methods and classes
-- Add JSDoc comments on all public TypeScript methods
 
 ### C# / .NET Conventions
 
@@ -31,51 +31,45 @@ Read `SPEC.md` and `project-spec.md` for full requirements before generating any
 - Use `var` for local variables where type is obvious
 - Use `async/await` for all I/O operations
 - Controller actions must return `Task<IActionResult>`
-- Use `ApiResponse<T>` wrapper for **all** API responses
+- PageModel handler methods must return `Task<IActionResult>` or `Task` (for OnGet)
+- Use `ApiResponse<T>` wrapper for **all** API responses (Todo.API)
 - Use `[Required]`, `[EmailAddress]`, `[MinLength]` data annotations on all DTOs
 - Use `ILogger<T>` in all services and controllers
 - Repository methods must be async and cancellable (`CancellationToken ct = default`)
-- `AppDbContext` table names: `TBL_User`, `TBL_Task`
-- Use `HasColumnType("varchar(255)")` etc. in EF fluent configuration
+- `AppDbContext` table names: `TBL_User`, `TBL_Task`, `TBL_Project`
+- Use `HasColumnType("nvarchar(255)")` etc. in EF fluent configuration
 
 **Naming Conventions:**
 - Interfaces: `IServiceName`, `IRepositoryName`
 - DTOs: `EntityActionDto` (e.g., `RegisterRequestDto`, `TaskResponseDto`)
 - Services: `EntityService` (e.g., `AuthService`)
 - Repositories: `EntityRepository`
-- Controllers: `EntityController`
+- Controllers: `EntityController` (Todo.API)
+- Razor Pages: `Pages/{Feature}/Index.cshtml` + `Index.cshtml.cs` with `IndexModel : PageModel`
 
-### TypeScript / Angular Conventions
+### Razor Pages Conventions (Todo.Web)
 
-- Use **standalone components** (Angular 18 style — no NgModules)
-- Use `inject()` function instead of constructor injection where possible
-- Use `signal()` and `computed()` where appropriate
-- Reactive Forms only — no template-driven forms
-- Services use `providedIn: 'root'`
-- All HTTP calls return typed `Observable<ApiResponse<T>>`
-- Unsubscribe using `takeUntilDestroyed()` or `async` pipe
-- Use `environment.ts` for API base URL: `http://localhost:7001`
-- Theme toggle must persist to `localStorage`
-- Spinner must show/hide on **every** HTTP request via interceptor
-
-**Naming Conventions:**
-- Components: `feature.component.ts`
-- Services: `feature.service.ts`
-- Guards: `feature.guard.ts`
-- Interceptors: `feature.interceptor.ts`
-- Models: `feature.model.ts`
-- Use `camelCase` for variables, `PascalCase` for classes/interfaces
+- Use `[BindProperty]` for form-bound properties on PageModel
+- Use `[BindProperty(SupportsGet = true)]` for query-string bound properties (pagination, search, filters)
+- Handler methods: `OnGetAsync`, `OnPostAsync`, `OnPostCreateAsync`, `OnPostEditAsync`, `OnPostDeleteAsync`, `OnPostToggleAsync`
+- Use `asp-page`, `asp-page-handler`, `asp-route-*` Tag Helpers — never raw `action=` attributes
+- Use `asp-for` on form fields — never raw `name=` attributes
+- Extract UserId from cookie claims: `int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)`
+- Redirect after POST to avoid double-submit: `return RedirectToPage(new { Page, Search })`
+- Use `ViewData["ActivePage"]` to highlight the current nav item in `_Layout.cshtml`
+- Use `[Authorize]` attribute on every PageModel that requires login
+- Unauthenticated users are automatically redirected to `/Auth/Login` by cookie middleware
 
 ### CSS / Styling Conventions
 
 - Use Bootstrap 5.3 utility classes as the primary styling approach
-- Component-scoped SCSS for custom overrides
-- Dark mode: apply `data-bs-theme="dark"` on `<html>` tag
+- Custom CSS lives in `wwwroot/css/site.css`
+- Dark mode: toggle `data-bs-theme` attribute on `<html id="htmlRoot">` via JavaScript; persist to `localStorage('ica-theme')`
 - ICA brand color: `#003087` (navy blue) as primary accent
 - Completed task style: `text-decoration: line-through; color: #dc3545;`
 - Navbar: always use `bg-primary` with `data-bs-theme="dark"` navbar variant
-- Cards: `shadow-sm` on all task cards
-- Loading spinner: centered fullscreen overlay with semi-transparent backdrop
+- Cards: `shadow-sm` on all task/project cards
+- Priority badges: Low = `bg-success`, Medium = `bg-warning text-dark`, High = `bg-danger`, Critical = `bg-dark`
 
 ---
 
@@ -83,59 +77,72 @@ Read `SPEC.md` and `project-spec.md` for full requirements before generating any
 
 Generate files in this order to avoid dependency issues:
 
-### Backend Order
+### Backend Order (shared layers)
 1. `Domain/Entities/User.cs`
-2. `Domain/Entities/TaskItem.cs`
-3. `Application/Wrappers/ApiResponse.cs`
-4. `Application/DTOs/Auth/*.cs`
-5. `Application/DTOs/Todo/*.cs`
-6. `Application/RepositoryInterfaces/IUserRepository.cs`
-7. `Application/RepositoryInterfaces/ITaskRepository.cs`
-8. `Application/ServiceInterfaces/IAuthService.cs`
-9. `Application/ServiceInterfaces/ITaskService.cs`
-10. `Persistence/Context/AppDbContext.cs`
-11. `Persistence/Repositories/UserRepository.cs`
-12. `Persistence/Repositories/TaskRepository.cs`
-13. `Infrastructure/Helpers/JwtHelper.cs`
-14. `Application/Services/AuthService.cs`
-15. `Application/Services/TaskService.cs`
-16. `Todo.API/Controllers/AuthController.cs`
-17. `Todo.API/Controllers/TaskController.cs`
-18. `Todo.API/Middleware/ExceptionMiddleware.cs`
-19. `Todo.API/Program.cs`
-20. `Todo.API/appsettings.json`
-21. `.csproj` files for each project
-22. `IcaTodo.sln`
+2. `Domain/Entities/Project.cs`
+3. `Domain/Entities/TaskItem.cs` (with `TaskPriority` enum)
+4. `Application/Wrappers/ApiResponse.cs`
+5. `Application/DTOs/Auth/*.cs`
+6. `Application/DTOs/Todo/*.cs`
+7. `Application/DTOs/Project/*.cs`
+8. `Application/RepositoryInterfaces/IUserRepository.cs`
+9. `Application/RepositoryInterfaces/ITaskRepository.cs`
+10. `Application/RepositoryInterfaces/IProjectRepository.cs`
+11. `Application/ServiceInterfaces/IAuthService.cs`
+12. `Application/ServiceInterfaces/ITaskService.cs`
+13. `Application/ServiceInterfaces/IProjectService.cs`
+14. `Application/ServiceInterfaces/IJwtHelper.cs`
+15. `Persistence/Context/AppDbContext.cs`
+16. `Persistence/Repositories/UserRepository.cs`
+17. `Persistence/Repositories/TaskRepository.cs`
+18. `Persistence/Repositories/ProjectRepository.cs`
+19. `Infrastructure/Helpers/JwtHelper.cs`
+20. `Application/Services/AuthService.cs`
+21. `Application/Services/TaskService.cs`
+22. `Application/Services/ProjectService.cs`
 
-### Frontend Order
-1. `environments/environment.ts`
-2. `core/models/*.ts`
-3. `core/services/loading.service.ts`
-4. `core/services/theme.service.ts`
-5. `core/services/auth.service.ts`
-6. `core/services/task.service.ts`
-7. `core/interceptors/auth.interceptor.ts`
-8. `core/interceptors/loading.interceptor.ts`
-9. `core/guards/auth.guard.ts`
-10. `layouts/spinner/spinner.component.*`
-11. `layouts/navbar/navbar.component.*`
-12. `views/auth/login/login.component.*`
-13. `views/auth/register/register.component.*`
-14. `views/todo/todo.component.*`
-15. `app.routes.ts`
-16. `app.config.ts`
-17. `app.component.*`
-18. `index.html`
-19. `main.ts`
-20. `angular.json`, `package.json`, `tsconfig.json`
+### Todo.API Order
+23. `Todo.API/Controllers/AuthController.cs`
+24. `Todo.API/Controllers/TaskController.cs`
+25. `Todo.API/Middleware/ExceptionMiddleware.cs`
+26. `Todo.API/Program.cs`
+27. `Todo.API/appsettings.json`
+
+### Todo.Web Order (Razor Pages)
+28. `Todo.Web/Pages/Shared/_ViewImports.cshtml`
+29. `Todo.Web/Pages/Shared/_ViewStart.cshtml`
+30. `Todo.Web/Pages/Shared/_Layout.cshtml`
+31. `Todo.Web/Pages/Auth/Login.cshtml` + `Login.cshtml.cs`
+32. `Todo.Web/Pages/Auth/Register.cshtml` + `Register.cshtml.cs`
+33. `Todo.Web/Pages/Auth/Logout.cshtml` + `Logout.cshtml.cs`
+34. `Todo.Web/Pages/Index.cshtml` + `Index.cshtml.cs`
+35. `Todo.Web/Pages/Dashboard/Index.cshtml` + `Index.cshtml.cs`
+36. `Todo.Web/Pages/Tasks/Index.cshtml` + `Index.cshtml.cs`
+37. `Todo.Web/Pages/Projects/Index.cshtml` + `Index.cshtml.cs`
+38. `Todo.Web/Pages/Error.cshtml` + `Error.cshtml.cs`
+39. `Todo.Web/wwwroot/css/site.css`
+40. `Todo.Web/wwwroot/js/site.js`
+41. `Todo.Web/Program.cs`
+42. `Todo.Web/appsettings.json`
+
+### Solution Files
+43. `.csproj` files for each project
+44. `IcaTodo.sln`
 
 ---
 
 ## Key Implementation Details
 
-### JWT Token Extraction in Backend
+### UserId Extraction (Razor Pages)
 
-The UserId must **always** be extracted from the JWT claim inside the controller — never from the request body:
+Always extract UserId from cookie claims in the PageModel — never from form fields:
+
+```csharp
+private int GetUserId() =>
+    int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+```
+
+### UserId Extraction (Todo.API Controllers)
 
 ```csharp
 private int GetUserIdFromToken()
@@ -155,37 +162,36 @@ Never hard-delete tasks. Always set `IsDeleted = true` and filter in all queries
 .Where(t => t.UserId == userId && !t.IsDeleted)
 ```
 
-### Search with Debounce (Frontend)
+### Cookie Authentication Setup (Todo.Web Program.cs)
 
-```typescript
-// In TodoComponent
-searchControl = new FormControl('');
-
-ngOnInit() {
-  this.searchControl.valueChanges.pipe(
-    debounceTime(400),
-    distinctUntilChanged(),
-    takeUntilDestroyed(this.destroyRef)
-  ).subscribe(query => {
-    this.currentPage = 1;
-    this.loadTasks(query ?? '');
-  });
-}
+```csharp
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Auth/Login";
+        options.LogoutPath = "/Auth/Logout";
+        options.AccessDeniedPath = "/Auth/Login";
+        options.ExpireTimeSpan = TimeSpan.FromHours(24);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    });
 ```
 
-### Auth Interceptor Pattern
+### Sign-In After Login (Razor Pages)
 
-```typescript
-// Attach token to every outgoing request
-intercept(req: HttpRequest<unknown>, next: HttpHandler) {
-  const token = localStorage.getItem('ica_jwt_token');
-  if (token) {
-    req = req.clone({
-      setHeaders: { Authorization: `Bearer ${token}` }
-    });
-  }
-  return next.handle(req);
-}
+```csharp
+var claims = new List<Claim>
+{
+    new(ClaimTypes.NameIdentifier, data.UserId.ToString()),
+    new(ClaimTypes.Name, data.Username),
+    new(ClaimTypes.Email, data.Email)
+};
+var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+await HttpContext.SignInAsync(
+    CookieAuthenticationDefaults.AuthenticationScheme,
+    new ClaimsPrincipal(identity),
+    new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24) });
 ```
 
 ### BCrypt Usage (Backend)
@@ -198,52 +204,57 @@ string hash = BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
 bool valid = BCrypt.Net.BCrypt.Verify(password, storedHash);
 ```
 
-### EF Core Configuration
+### EF Core Configuration (SQL Server)
 
 ```csharp
 // AppDbContext — table naming
 modelBuilder.Entity<User>().ToTable("TBL_User");
 modelBuilder.Entity<TaskItem>().ToTable("TBL_Task");
+modelBuilder.Entity<Project>().ToTable("TBL_Project");
 
 // Indexes for performance
 modelBuilder.Entity<User>()
     .HasIndex(u => u.Email).IsUnique();
 modelBuilder.Entity<TaskItem>()
     .HasIndex(t => new { t.UserId, t.IsDeleted });
+modelBuilder.Entity<Project>()
+    .HasIndex(p => p.UserId);
+```
+
+### Dark Mode Toggle (site.js)
+
+```javascript
+// Toggle theme and persist to localStorage
+const htmlRoot = document.getElementById('htmlRoot');
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = document.getElementById('themeIcon');
+
+function applyTheme(theme) {
+    htmlRoot.setAttribute('data-bs-theme', theme);
+    themeIcon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+}
+// On load: read from localStorage('ica-theme')
+// On click: toggle and save
 ```
 
 ---
 
 ## Error Handling
 
-### Backend
+### Backend (Todo.API)
 
 - Global exception middleware catches all unhandled exceptions
 - Returns `ApiResponse<object>` with `success: false` and error message
 - Never expose stack traces in production
 - Log all exceptions with `ILogger`
 
-### Frontend
+### Frontend (Todo.Web Razor Pages)
 
-- HTTP errors caught in service layer via `catchError`
-- Display user-friendly error messages (not raw API errors)
-- 401 responses: clear localStorage and redirect to `/auth/login`
-- Network errors: show "Unable to connect to server" toast/alert
-
----
-
-## CORS Configuration
-
-```csharp
-// Program.cs
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAngular", policy =>
-        policy.WithOrigins("http://localhost:4200")
-              .AllowAnyMethod()
-              .AllowAnyHeader());
-});
-```
+- Service layer returns `ApiResponse<T>` — check `.Success` in PageModel
+- On failure, set `ErrorMessage` property and call `return Page()` to re-render
+- On success after POST, set `SuccessMessage` and reload data, then `return Page()`
+- `[Authorize]` attribute handles unauthenticated access (redirects to `/Auth/Login`)
+- ModelState validation errors are shown via `asp-validation-for` Tag Helpers
 
 ---
 
@@ -253,23 +264,24 @@ builder.Services.AddCors(options =>
 # Run from solution root
 dotnet ef migrations add InitialCreate \
   --project src/Infrastructure/Persistence \
-  --startup-project src/Presentation/Todo.API
+  --startup-project src/Presentation/Todo.Web
 
 dotnet ef database update \
   --project src/Infrastructure/Persistence \
-  --startup-project src/Presentation/Todo.API
+  --startup-project src/Presentation/Todo.Web
 ```
 
 ---
 
 ## Do Not
 
-- Do NOT use `ViewBag`, `ViewData`, or Razor views anywhere
-- Do NOT use `NgModules` — Angular 18 standalone components only
+- Do NOT use `ViewBag` — use `ViewData` (for layout helpers like `ActivePage`) or strongly-typed Model properties
+- Do NOT use MVC `View()` returns in Razor Pages — use `Page()`, `RedirectToPage()`, `RedirectToAction()`
 - Do NOT store passwords in plain text — always BCrypt hash
-- Do NOT trust UserId from request body — always use JWT claims
-- Do NOT hard-delete any task records — use soft delete
-- Do NOT use `any` type in TypeScript — always use proper interfaces
+- Do NOT trust UserId from form fields — always use cookie claims (`ClaimTypes.NameIdentifier`)
+- Do NOT hard-delete any task records — use soft delete (`IsDeleted = true`)
+- Do NOT skip form validation on backend — always check `ModelState.IsValid`
 - Do NOT add `console.log` debug statements in production code
-- Do NOT use `HttpClient` directly in components — always use services
-- Do NOT skip form validation on either frontend or backend
+- Do NOT use raw `<form action="...">` — always use Tag Helpers (`asp-page`, `asp-page-handler`)
+- Do NOT add Angular, React, or any SPA framework — this is a server-rendered Razor Pages app
+- Do NOT use Node.js / npm / Angular CLI — no JavaScript build pipeline
